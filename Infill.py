@@ -6,7 +6,7 @@ import shapely.affinity as sa
 density = 1.0
 platformWidth = 50
 platformHeight = 50
-coords = [
+coordsIn = [
 			[[0.0,4.0],[3.0,6.0]],
 			[[3.0,6.0],[8.0,6.0]],
 			[[8.0,6.0],[11.0,4.0]],
@@ -15,7 +15,7 @@ coords = [
 			[[3.0,2.0],[0.0,4.0]]
 		]
 """
-coords = [
+coordsIn = [
 			[[5,2],[0,10]],
 			[[0,10],[5,18]],
 			[[5,18],[20,18]],
@@ -25,28 +25,33 @@ coords = [
 		 ]
 """
 
-if (coords[0][0] != coords[-1][1]):
+if (coordsIn[0][0] != coordsIn[-1][1]):
 	print("Shape is not closed. Exiting...")
 	exit(1)
-coordsSize = len(coords)
+#minX = min(c[0][0] for c in coords)
+#minY = min(c[0][1] for c in coords)
+#maxX = max(c[0][0] for c in coords)
+#maxY = max(c[0][1] for c in coords)
+coordsSize = len(coordsIn)
 coordsPoints = [[]]
-coordsPoints[0] = coords[0][0]
+coordsPoints[0] = coordsIn[0][0]
 for i in range(coordsSize):
-	coordsPoints.append(coords[i][1])
+	coordsPoints.append(coordsIn[i][1])
 shape = sg.LineString(coordsPoints)
-
+rotShape = sa.rotate(shape, 90, 'center')
+#print(rotShape)
 
 def __main__():
-	print("\tCoords")
-	for c in coords:
+	print("\tCoordsIn")
+	for c in coordsIn:
 		print(c)
 	print()
 
-	vertInfillVectors = vert_infill(shape)
-	horizInfillVectors = horiz_infill(shape)
-	rotShape = sa.rotate(shape, 90, 'center')
-	print(rotShape)
-	#infillVectorsRot = infill(rotShape)
+	boundBox = find_shape_box(shape)
+	vertInfillVectors = vert_infill(shape, boundBox)
+	horizInfillVectors = horiz_infill(shape, boundBox)
+	rotBoundBox = find_shape_box(rotShape)
+	rotInfillVectors = horiz_infill(rotShape, rotBoundBox)
 	print("\n\tVertInfill")
 	for v in vertInfillVectors:
 		print(v)
@@ -55,13 +60,13 @@ def __main__():
 	for h in horizInfillVectors:
 		print(h)
 	print()
-	#print("\n\tinfillRot")
-	#for v in infillVectorsRot:
-	#	print(v)
-	#print()
+	print("\n\tRotInfill")
+	for v in rotInfillVectors:
+		print(v)
+	print()
 	
 	structOut = {
-		"perimeter": coords,
+		"perimeter": coordsIn,
 		"infill": vertInfillVectors,
 		"settings": None
 	}
@@ -70,11 +75,19 @@ def __main__():
 	return 0
 
 
-def vert_infill(shp):
+def find_shape_box(shp):
+	minX = min(c[0] for c in shp.coords)
+	minY = min(c[1] for c in shp.coords)
+	maxX = max(c[0] for c in shp.coords)
+	maxY = max(c[1] for c in shp.coords)
+	
+	return [minX, minY, maxX, maxY]
+
+def vert_infill(shp, box):
 	vecs = [[[],[]]]
-	i = 0
-	while (i <= platformWidth):
-		vertLine = sg.LineString([[i,0],[i,platformHeight]])
+	i = box[0]
+	while (i <= box[2]):
+		vertLine = sg.LineString([[i,box[1]],[i,box[3]]])
 		vertIntersect = shp.intersection(vertLine)
 		if (not(vertIntersect.is_empty) and (vertIntersect.geom_type == "MultiPoint")):
 			p1 = [vertIntersect[0].x,vertIntersect[0].y]
@@ -87,11 +100,11 @@ def vert_infill(shp):
 	return vecs
 
 
-def horiz_infill(shp):
+def horiz_infill(shp, box):
 	vecs = [[[],[]]]
-	i = 0
-	while (i <= platformHeight):
-		horizLine = sg.LineString([[0,i],[platformWidth,i]])
+	i = box[1]
+	while (i <= box[3]):
+		horizLine = sg.LineString([[box[0],i],[box[2],i]])
 		horizIntersect = shp.intersection(horizLine)
 		if (not(horizIntersect.is_empty) and (horizIntersect.geom_type == "MultiPoint")):
 			p1 = [horizIntersect[0].x,horizIntersect[0].y]
