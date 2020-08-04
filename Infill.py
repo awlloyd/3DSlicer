@@ -1,8 +1,15 @@
+# Infill.py
+# Author: Andrew Lloyd (awlloyd@clemson.edu)
+
+# Imported Libraries
 import numpy as np
 import shapely.geometry as sg
 import shapely.affinity as sa
 
 
+# init_shape
+# 	Takes in a a coordinate array and returns
+# 	a Shapely LineString shape for use in other functions
 def init_shape(coordsIn):
 	if (coordsIn[0][0] != coordsIn[-1][1]):
 		print("Shape is not closed. Exiting...")
@@ -17,6 +24,9 @@ def init_shape(coordsIn):
 	return shape
 	
 
+# find_shape_box
+# 	Takes the Shapely LineString shape and returns
+# 	the bounding box that encapsulates it
 def find_shape_box(shape):
 	minX = min(c[0] for c in shape.coords)
 	minY = min(c[1] for c in shape.coords)
@@ -26,6 +36,10 @@ def find_shape_box(shape):
 	return [minX, minY, maxX, maxY]
 
 
+# horiz_infill
+# 	Takes the Shapely LineString shape and a specified density
+# 	then draws horizontal infill lines through the shape. Returns
+# 	an array containing the infill vectors.
 def horiz_infill(shape, density):
 	box = find_shape_box(shape)
 	vecs = [[[],[]]]
@@ -43,6 +57,10 @@ def horiz_infill(shape, density):
 	return vecs
 
 
+# rot_infill
+# 	Takes the Shapely Linestring shape and a specified angle and density
+# 	then iteratively draws infill lines through the shape, rotating
+# 	by the specified angle on each iteration.
 def rot_infill(shape, angle, density):
 	poly = sg.Polygon(shape)
 	shapeCenter = poly.centroid
